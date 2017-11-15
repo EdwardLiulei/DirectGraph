@@ -22,8 +22,6 @@ namespace FractionCalculator
         public ulong Denominator { get { return _denominator; } }
         public ulong Numerator { get { return _numerator; } }
 
-        public ulong ActualNumerator { get { return _numerator + _integerPart * _denominator; } }
-
         private bool IsPositive { get { return _isPositive; } }
 
         private ulong IntegerPart { get { return _integerPart; } }
@@ -160,6 +158,60 @@ namespace FractionCalculator
             return null;
         }
 
+        public static bool operator ==(Fraction a, int b)
+        {
+            return CompareWithInteger(a, b);
+        }
+
+        public static bool operator !=(Fraction a, int b)
+        {
+            return !CompareWithInteger(a, b);
+        }
+
+        public static bool operator ==(int a, Fraction b)
+        {
+            return CompareWithInteger(b, a);
+        }
+
+        public static bool operator !=(int a, Fraction b)
+        {
+            return !CompareWithInteger(b, a);
+        }
+
+        public static bool operator ==(Fraction a,Fraction b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(Fraction a, Fraction b)
+        {
+            return !a.Equals(b);
+        }
+
+        public static bool operator >(Fraction a, Fraction b)
+        {
+            if (a.IsPositive && b.IsPositive)
+                return CompareTwoPositive(a, b);
+            if (a.IsPositive && !b.IsPositive)
+                return true;
+            if (!a.IsPositive && b.IsPositive)
+                return false;
+            else
+                return !CompareTwoPositive(a, b);
+        }
+
+        public static bool operator <(Fraction a, Fraction b)
+        {
+            if (a.IsPositive && b.IsPositive)
+                return !CompareTwoPositive(a, b);
+            if (a.IsPositive && !b.IsPositive)
+                return false;
+            if (!a.IsPositive && b.IsPositive)
+                return true;
+            else
+                return CompareTwoPositive(a, b);
+        }
+
         public Fraction MutiplyBy(ulong mutiple)
         {
             ulong newNumera = _numerator * mutiple;
@@ -200,18 +252,33 @@ namespace FractionCalculator
             if (!_isPositive)
                 result = "-";
             if (_integerPart != 0)
-                result = result + _integerPart+",";
-            result = result + _numerator + "/" + _denominator;
+                result = result + _integerPart;
+            if (_integerPart != 0 && _numerator !=0 )
+                result = result + ",";
+            if(_numerator!=0 )
+                result = result + _numerator + "/" + _denominator;
             return result;
         }
 
-
+        private static bool CompareWithInteger(Fraction a, int b)
+        {
+            bool isIntegerPositive = b > 0;
+            ulong newInt;
+            if (b > 0)
+                newInt = (ulong)b;
+            else
+                newInt = (ulong)(b * -1);
+            if (a.IsPositive == isIntegerPositive && newInt == a.IntegerPart && a.Numerator ==0)
+                return true;
+            else
+                return false;
+        }
         private static Fraction AddTwoPositive(Fraction a,Fraction b)
         {
             ulong integerPater = a.IntegerPart + b.IntegerPart;
-            ulong denominator = a.Denominator * b.Denominator;
-            ulong numerator = a.Numerator * b.Denominator + b.Numerator* a.Denominator;
-            Fraction c = new Fraction( numerator,denominator);
+            ulong multiple = GetLeastCommonMultiple( a.Denominator, b.Denominator);
+            ulong numerator = a.Numerator * (multiple/ a.Denominator) + b.Numerator*(multiple/ b.Denominator);
+            Fraction c = new Fraction( numerator, multiple);
             c._integerPart = c.IntegerPart + integerPater;
             return c;
         }
@@ -220,25 +287,45 @@ namespace FractionCalculator
         {
             
             bool isPositive;
-            ulong denominator = a.Denominator * b.Denominator;
-            ulong numerator;
-            if (a.ActualNumerator * b.Denominator > b.ActualNumerator * a.Denominator)
+            ulong multiple = GetLeastCommonMultiple(a.Denominator, b.Denominator);
+            ulong numerator,newNumeratorA,newNumeratorB;
+            newNumeratorA = a.IntegerPart * multiple + multiple / a.Denominator * a.Numerator;
+            newNumeratorB = b.IntegerPart * multiple + multiple / b.Denominator * b.Numerator;
+
+            if (newNumeratorA > newNumeratorB)
             {
-                numerator = a.ActualNumerator*b.Denominator - b.ActualNumerator*a.Denominator;
+                numerator = newNumeratorA - newNumeratorB;
                 isPositive = true;
             }
             else
             {
-                numerator = a.ActualNumerator * b.Denominator - b.ActualNumerator * a.Denominator;
+                numerator =  newNumeratorB -newNumeratorA;
                 isPositive = false;
             }
-            Fraction c = new Fraction(numerator,denominator);
+            Fraction c = new Fraction(numerator,multiple);
             
             c._isPositive = isPositive;
             return c;
         }
 
-        private ulong GetGreatestDivisor(ulong a, ulong b)
+        private static bool CompareTwoPositive(Fraction a, Fraction b)
+        {
+            ulong multiple = GetLeastCommonMultiple(a.Denominator, b.Denominator);
+            ulong numerator, newNumeratorA, newNumeratorB;
+            newNumeratorA = a.IntegerPart * multiple + multiple / a.Denominator * a.Numerator;
+            newNumeratorB = b.IntegerPart * multiple + multiple / b.Denominator * b.Numerator;
+
+            if (newNumeratorA > newNumeratorB)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private static ulong GetGreatestDivisor(ulong a, ulong b)
         {
             ulong result;
             if (a < b)
@@ -256,10 +343,16 @@ namespace FractionCalculator
             return a;
         }
 
+        private static ulong GetLeastCommonMultiple(ulong a, ulong b)
+        {
+            ulong divisor = GetGreatestDivisor(a, b);
+            return Math.Max(a, b) / divisor * Math.Min(a,b);
+        }
+
         private ulong GetIntegerPart(ref ulong denominator,ref ulong numerator)
         {
             ulong result = 0;
-            if (numerator <= denominator)
+            if (numerator < denominator)
                 return 0;
             result = numerator / denominator;
             numerator = numerator % denominator;
