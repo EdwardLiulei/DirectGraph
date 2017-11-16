@@ -213,10 +213,9 @@ namespace FractionCalculator
         }
 
         public Fraction MutiplyBy(ulong mutiple)
-        {
-            ulong newNumera = _numerator * mutiple;
+        {           
+            ulong newNumera =( _numerator + _denominator * _integerPart)* mutiple;
             Fraction c = new Fraction( newNumera, _denominator, _isPositive);
-            c._integerPart = c._integerPart + _integerPart;
 
             return c;
         }
@@ -224,8 +223,8 @@ namespace FractionCalculator
         public Fraction DivideBy(ulong divider)
         {
             ulong newDeno = _denominator * divider;
-            Fraction c = new Fraction( _numerator, newDeno,_isPositive);
-            c._integerPart = c._integerPart + _integerPart;
+            ulong newNumera = _numerator + _denominator * _integerPart;
+            Fraction c = new Fraction(newNumera, newDeno,_isPositive);
 
             return c;
         }
